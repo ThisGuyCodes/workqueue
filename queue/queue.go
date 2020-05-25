@@ -48,9 +48,10 @@ func (q *Queue) run(in <-chan interface{}, rawout chan<- interface{}) {
 	var out chan<- interface{}
 
 	for {
-
+		nextSend := q.l.Front()
+		var nextSendValue interface{}
 		// if there's nothing in the list
-		if q.l.Front() == nil {
+		if nextSend == nil {
 			// if the context has already been cancelled
 			if isCanceled {
 				// we're done!
@@ -61,14 +62,15 @@ func (q *Queue) run(in <-chan interface{}, rawout chan<- interface{}) {
 		} else {
 			// we have something to send, (re)enable sending
 			out = rawout
+			nextSendValue = nextSend.Value
 		}
 
 		select {
 		case item := <-in:
 			q.l.PushBack(item)
 			q.lenWg.Add(1)
-		case out <- q.l.Front().Value:
-			q.l.Remove(q.l.Front())
+		case out <- nextSendValue:
+			q.l.Remove(nextSend)
 			q.lenWg.Done()
 		case <-ctxDone:
 			// allow us to finish sending items
