@@ -90,10 +90,13 @@ func (q *Queue) Pop() interface{} {
 
 // Push adds an item to the queue.
 // It no-ops when the context is expired.
-func (q *Queue) Push(val interface{}) {
+// Returns if the push was successful.
+func (q *Queue) Push(val interface{}) bool {
 	select {
 	case q.in <- val:
+		return true
 	case <-q.ctx.Done():
+		return false
 	}
 }
 
